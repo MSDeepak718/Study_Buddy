@@ -1,0 +1,36 @@
+# FastAPI & Server
+fastapi
+uvicorn[standard]
+python-multipart
+
+# Database
+sqlalchemy
+psycopg2-binary
+alembic
+
+# AI / LLM
+google-generativeai
+langchain
+langchain-google-genai
+langchain-community
+langchain-text-splitters
+
+# Embeddings
+sentence-transformers
+
+# Vector Database
+chromadb
+
+# Document Parsing
+pymupdf
+pdfplumber
+python-docx
+
+# Utilities
+python-dotenv
+pydantic[email]
+pydantic-settings
+uuid6
+
+# CORS
+starlette

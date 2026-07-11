@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { getSession, generateQuestion, submitAnswer, completeInterview } from '../services/api';
 import type { SessionInfo, QuestionData, EvaluationResult } from '../types';
 import LoadingSpinner from '../components/LoadingSpinner';
+import VoiceInterviewPage from './VoiceInterviewPage';
 
 interface ChatMessage {
   type: 'question' | 'answer' | 'evaluation' | 'system';
@@ -22,6 +23,7 @@ export default function InterviewPage() {
   const { sessionId } = useParams<{ sessionId: string }>();
   const navigate = useNavigate();
   const [session, setSession] = useState<SessionInfo | null>(null);
+  const [voiceMode, setVoiceMode] = useState<boolean | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [currentQuestion, setCurrentQuestion] = useState<QuestionData | null>(null);
   const [answerText, setAnswerText] = useState('');
@@ -48,6 +50,12 @@ export default function InterviewPage() {
     try {
       const s = await getSession(sessionId);
       setSession(s);
+      // Check interview mode
+      if (s.interview_mode === 'voice') {
+        setVoiceMode(true);
+        return;
+      }
+      setVoiceMode(false);
       if (s.status === 'completed') {
         setFinished(true);
         // Map complete history
@@ -151,13 +159,15 @@ export default function InterviewPage() {
     setSubmitting(false);
   };
 
-  const handleComplete = async (reason?: 'timeout') => {
+  const handleComplete = async (reason?: 'timeout' | 'force_quit') => {
     if (!sessionId) return;
     try {
       await completeInterview(sessionId);
       setFinished(true);
       const msgContent = reason === 'timeout'
         ? 'Time is up! The interview has been automatically completed. View your analytics dashboard for detailed results.'
+        : reason === 'force_quit'
+        ? 'Interview ended early. View your analytics dashboard for detailed results.'
         : 'Interview completed! View your analytics dashboard for detailed results.';
       setMessages(prev => [...prev, { type: 'system', content: msgContent }]);
     } catch (e) { console.error(e); }
@@ -196,6 +206,9 @@ export default function InterviewPage() {
 
   if (!session) return <LoadingSpinner text="Loading interview session..." />;
 
+  // Route to VoiceInterviewPage for voice mode sessions
+  if (voiceMode) return <VoiceInterviewPage />;
+
   const progressPercentage = Math.round((session.answered_questions / session.total_questions) * 100);
 
   return (
@@ -220,6 +233,13 @@ export default function InterviewPage() {
               <span className={timeLeft < 60 ? 'animate-pulse' : ''}>Time Left: </span>
               <span>{formatTime(timeLeft)}</span>
             </div>
+          )}
+          {!finished && (
+            <button onClick={() => { if(confirm('Are you sure you want to end the interview early?')) handleComplete('force_quit'); }}
+              className="px-3 py-1.5 rounded-xl text-xs font-medium border hover:bg-[rgba(239,68,68,0.1)] transition-colors"
+              style={{ borderColor: 'var(--color-danger)', color: 'var(--color-danger)' }}>
+              End Interview
+            </button>
           )}
           {/* Progress */}
           <div className="flex flex-col items-end gap-1">

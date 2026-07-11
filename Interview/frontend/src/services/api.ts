@@ -2,7 +2,7 @@ import axios from 'axios';
 import type {
   DocumentInfo, InterviewConfig, InterviewConfigRequest,
   StartInterviewRequest, SessionInfo, QuestionData,
-  SubmitAnswerResponse, DashboardData,
+  DashboardData,
 } from '../types';
 
 const api = axios.create({
@@ -46,6 +46,11 @@ export const deleteConfig = async (id: string): Promise<{ message: string }> => 
   return data;
 };
 
+export const updateConfig = async (id: string, config: InterviewConfigRequest): Promise<InterviewConfig> => {
+  const { data } = await api.put(`/interviews/configurations/${id}`, config);
+  return data;
+};
+
 // ===== Interview Sessions =====
 export const startInterview = async (req: StartInterviewRequest) => {
   const { data } = await api.post('/interviews/start', req);
@@ -62,7 +67,7 @@ export const generateQuestion = async (sessionId: string): Promise<QuestionData>
   return data;
 };
 
-export const submitAnswer = async (sessionId: string, questionId: string, answerText: string): Promise<SubmitAnswerResponse> => {
+export const submitAnswer = async (sessionId: string, questionId: string, answerText: string): Promise<any> => {
   const { data } = await api.post(`/interviews/${sessionId}/answer`, {
     question_id: questionId,
     answer_text: answerText,
@@ -72,6 +77,11 @@ export const submitAnswer = async (sessionId: string, questionId: string, answer
 
 export const completeInterview = async (sessionId: string) => {
   const { data } = await api.post(`/interviews/${sessionId}/complete`);
+  return data;
+};
+
+export const completeVoiceInterview = async (sessionId: string, transcript: { speaker: string; text: string; timestamp: number }[]) => {
+  const { data } = await api.post(`/interviews/${sessionId}/voice/complete`, { transcript });
   return data;
 };
 

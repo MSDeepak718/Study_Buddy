@@ -49,3 +49,20 @@ def create_tables():
                 conn.commit()
     except Exception:
         pass
+
+    # Auto-migrate: add interview_mode column
+    try:
+        with engine.connect() as conn:
+            res = conn.execute(text(
+                "SELECT column_name "
+                "FROM information_schema.columns "
+                "WHERE table_name='interview_configurations' AND column_name='interview_mode'"
+            ))
+            if not res.fetchone():
+                conn.execute(text(
+                    "ALTER TABLE interview_configurations "
+                    "ADD COLUMN interview_mode VARCHAR(10) DEFAULT 'chat' NOT NULL;"
+                ))
+                conn.commit()
+    except Exception:
+        pass

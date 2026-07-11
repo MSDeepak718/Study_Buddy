@@ -41,12 +41,6 @@ async def upload_document(file: UploadFile = File(...), db: Session = Depends(ge
     admin = get_or_create_admin(db)
     file_path, content_hash = document_service.save_uploaded_file(content, file.filename or "document")
 
-    # Check for duplicate
-    existing = db.query(UploadedDocument).filter(UploadedDocument.content_hash == content_hash).first()
-    if existing:
-        Path(file_path).unlink(missing_ok=True)
-        return DocumentUploadResponse(id=existing.id, filename=existing.filename, status=existing.status.value, message="Document already uploaded")
-
     doc = UploadedDocument(uploaded_by=admin.id, filename=file.filename or "document", file_path=file_path, content_hash=content_hash, status=DocumentStatus.PROCESSING)
     db.add(doc)
     db.commit()

@@ -14,6 +14,7 @@ export interface InterviewConfig {
   duration_minutes: number;
   num_questions: number;
   document_ids: string[];
+  interview_mode: string;
   created_at: string;
 }
 
@@ -24,6 +25,7 @@ export interface InterviewConfigRequest {
   duration_minutes: number;
   num_questions: number;
   document_ids: string[];
+  interview_mode: string;
 }
 
 export interface StartInterviewRequest {
@@ -50,6 +52,7 @@ export interface SessionInfo {
   total_questions: number;
   answered_questions: number;
   duration_minutes: number;
+  interview_mode: string;
   overall_score: number | null;
   started_at: string | null;
   completed_at: string | null;

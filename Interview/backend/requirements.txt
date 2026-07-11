@@ -34,3 +34,6 @@ uuid6
 
 # CORS
 starlette
+
+# WebSocket (for Gemini Live API)
+websockets

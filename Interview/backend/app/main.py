@@ -8,6 +8,7 @@ from app.database import create_tables
 from app.api.documents import router as documents_router
 from app.api.interviews import router as interviews_router
 from app.api.dashboard import router as dashboard_router
+from app.api.voice import router as voice_router
 from app.services.rag_service import rag_service
 
 # Configure logging
@@ -52,6 +53,7 @@ app.add_middleware(
 app.include_router(documents_router, prefix="/api/v1")
 app.include_router(interviews_router, prefix="/api/v1")
 app.include_router(dashboard_router, prefix="/api/v1")
+app.include_router(voice_router, prefix="/api/v1")
 
 
 @app.get("/")

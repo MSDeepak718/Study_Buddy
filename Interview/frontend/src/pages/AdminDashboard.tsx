@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { uploadDocument, listDocuments, deleteDocument, createConfig, listConfigs, startInterview, deleteConfig } from '../services/api';
+import { uploadDocument, listDocuments, deleteDocument, createConfig, listConfigs, startInterview, deleteConfig, updateConfig } from '../services/api';
 import type { DocumentInfo, InterviewConfig } from '../types';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { useNavigate } from 'react-router-dom';
@@ -13,6 +13,7 @@ export default function AdminDashboard() {
   const [uploadMsg, setUploadMsg] = useState('');
   const [creating, setCreating] = useState(false);
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
+  const [editingConfigId, setEditingConfigId] = useState<string | null>(null);
 
   useEffect(() => {
     const handleClickOutside = () => setActiveMenuId(null);
@@ -20,13 +21,13 @@ export default function AdminDashboard() {
     return () => document.removeEventListener('click', handleClickOutside);
   }, []);
 
-  // Config form
   const [title, setTitle] = useState('');
   const [topics, setTopics] = useState('');
   const [difficulty, setDifficulty] = useState('medium');
   const [duration, setDuration] = useState(30);
   const [numQuestions, setNumQuestions] = useState(5);
   const [selectedDocs, setSelectedDocs] = useState<string[]>([]);
+  const [interviewMode, setInterviewMode] = useState<'chat' | 'voice'>('chat');
 
   const loadData = useCallback(async () => {
     try {
@@ -49,6 +50,7 @@ export default function AdminDashboard() {
       loadData();
     } catch (err: any) {
       setUploadMsg(`${err?.response?.data?.detail || 'Upload failed'}`);
+      loadData();
     } finally {
       setUploading(false);
       e.target.value = '';
@@ -74,12 +76,21 @@ export default function AdminDashboard() {
     if (!title.trim()) return;
     setCreating(true);
     try {
-      await createConfig({
+      const configData = {
         title, difficulty, duration_minutes: duration, num_questions: numQuestions,
         topics: topics.split(',').map(t => t.trim()).filter(Boolean),
         document_ids: selectedDocs,
-      });
-      setTitle(''); setTopics(''); setSelectedDocs([]);
+        interview_mode: interviewMode,
+      };
+      
+      if (editingConfigId) {
+        await updateConfig(editingConfigId, configData);
+        setEditingConfigId(null);
+      } else {
+        await createConfig(configData);
+      }
+      
+      setTitle(''); setTopics(''); setSelectedDocs([]); setDifficulty('medium'); setDuration(30); setNumQuestions(5); setInterviewMode('chat');
       loadData();
     } catch (e) { console.error(e); }
     setCreating(false);
@@ -150,7 +161,24 @@ export default function AdminDashboard() {
 
         {/* Configuration Section */}
         <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }} className="glass rounded-2xl p-6">
-          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">Create Interview</h2>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-semibold flex items-center gap-2">
+              {editingConfigId ? 'Edit Interview' : 'Create Interview'}
+            </h2>
+            {editingConfigId && (
+              <button 
+                onClick={() => {
+                  setEditingConfigId(null);
+                  setTitle(''); setTopics(''); setSelectedDocs([]);
+                  setDifficulty('medium'); setDuration(30); setNumQuestions(5); setInterviewMode('chat');
+                }}
+                className="text-xs px-2 py-1 rounded-lg border hover:bg-[rgba(255,255,255,0.05)]"
+                style={{ borderColor: 'var(--color-border)', color: 'var(--color-text-secondary)' }}
+              >
+                Cancel Edit
+              </button>
+            )}
+          </div>
           <form onSubmit={handleCreateConfig} className="space-y-4">
             <div>
               <label className="block text-sm font-medium mb-1" style={{ color: 'var(--color-text-secondary)' }}>Title</label>
@@ -196,6 +224,31 @@ export default function AdminDashboard() {
               </div>
             </div>
 
+            {/* Interview Mode Toggle */}
+            <div>
+              <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text-secondary)' }}>Interview Mode</label>
+              <div className="flex gap-2">
+                <button type="button" onClick={() => setInterviewMode('chat')}
+                  className="flex-1 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-2"
+                  style={{
+                    background: interviewMode === 'chat' ? 'var(--color-primary)' : 'var(--color-bg-input)',
+                    color: interviewMode === 'chat' ? '#fff' : 'var(--color-text-secondary)',
+                    border: `1px solid ${interviewMode === 'chat' ? 'var(--color-primary)' : 'var(--color-border)'}`,
+                  }}>
+                  💬 Chat
+                </button>
+                <button type="button" onClick={() => setInterviewMode('voice')}
+                  className="flex-1 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-2"
+                  style={{
+                    background: interviewMode === 'voice' ? 'var(--color-primary)' : 'var(--color-bg-input)',
+                    color: interviewMode === 'voice' ? '#fff' : 'var(--color-text-secondary)',
+                    border: `1px solid ${interviewMode === 'voice' ? 'var(--color-primary)' : 'var(--color-border)'}`,
+                  }}>
+                  🎤 Voice
+                </button>
+              </div>
+            </div>
+
             {selectedDocs.length > 0 && (
               <p className="text-xs" style={{ color: 'var(--color-accent)' }}>
                 {selectedDocs.length} document{selectedDocs.length > 1 ? 's' : ''} selected as knowledge base
@@ -206,7 +259,7 @@ export default function AdminDashboard() {
               className="w-full py-3 rounded-xl text-sm font-semibold transition-all duration-300 disabled:opacity-50"
               style={{ background: 'var(--gradient-primary)', color: '#fff', boxShadow: '0 4px 20px rgba(129, 255, 107, 0.41)'}}
             >
-              {creating ? 'Creating...' : 'Create'}
+              {creating ? (editingConfigId ? 'Updating...' : 'Creating...') : (editingConfigId ? 'Update Configuration' : 'Create')}
             </button>
           </form>
         </motion.div>
@@ -244,6 +297,25 @@ export default function AdminDashboard() {
                         style={{ background: 'var(--color-bg-elevated)' }}
                       >
                         <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveMenuId(null);
+                            setEditingConfigId(cfg.id);
+                            setTitle(cfg.title);
+                            setTopics(cfg.topics?.join(', ') || '');
+                            setDifficulty(cfg.difficulty);
+                            setDuration(cfg.duration_minutes);
+                            setNumQuestions(cfg.num_questions);
+                            setSelectedDocs(cfg.document_ids || []);
+                            setInterviewMode((cfg.interview_mode || 'chat') as 'chat' | 'voice');
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                          }}
+                          className="w-full text-left px-3 py-1.5 text-xs font-medium hover:bg-[rgba(255,255,255,0.05)] transition-colors flex items-center gap-2"
+                          style={{ color: 'var(--color-text-primary)' }}
+                        >
+                          Edit
+                        </button>
+                        <button
                           onClick={async (e) => {
                             e.stopPropagation();
                             setActiveMenuId(null);
@@ -251,8 +323,8 @@ export default function AdminDashboard() {
                               await handleDeleteConfig(cfg.id);
                             }
                           }}
-                          className="w-full text-left px-3 py-1.5 text-xs font-medium hover:bg-[rgba(255,0,0,0.1)] transition-colors flex items-center gap-2"
-                          style={{ color: 'var(--color-danger)' }}
+                          className="w-full text-left px-3 py-1.5 text-xs font-medium hover:bg-[rgba(255,255,255,0.05)] transition-colors flex items-center gap-2"
+                          style={{ color: 'var(--color-text-primary)' }}
                         >
                           Delete
                         </button>
@@ -263,7 +335,15 @@ export default function AdminDashboard() {
                 <div className="space-y-1 text-xs mb-4" style={{ color: 'var(--color-text-secondary)' }}>
                   <p>Topics: {cfg.topics?.join(', ') || 'General'}</p>
                   <p>Difficulty: <span className="capitalize" style={{ color: cfg.difficulty === 'hard' ? 'var(--color-danger)' : cfg.difficulty === 'medium' ? 'var(--color-warning)' : 'var(--color-success)' }}>{cfg.difficulty}</span></p>
-                  <p>{cfg.num_questions} questions • ⏱️ {cfg.duration_minutes} min</p>
+                  <p className="flex items-center gap-2">
+                    {cfg.num_questions} questions • ⏱️ {cfg.duration_minutes} min
+                    <span className="px-1.5 py-0.5 rounded text-[10px] font-bold" style={{
+                      background: cfg.interview_mode === 'voice' ? 'rgba(134, 194, 50, 0.2)' : 'rgba(100, 100, 100, 0.2)',
+                      color: cfg.interview_mode === 'voice' ? 'var(--color-primary)' : 'var(--color-text-muted)',
+                    }}>
+                      {cfg.interview_mode === 'voice' ? '🎤 VOICE' : '💬 CHAT'}
+                    </span>
+                  </p>
                 </div>
                 <button onClick={() => handleStartInterview(cfg.id)}
                   className="w-full py-2 rounded-lg text-sm font-medium transition-all hover:opacity-90"

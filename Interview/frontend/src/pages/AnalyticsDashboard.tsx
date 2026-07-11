@@ -133,7 +133,7 @@ export default function AnalyticsDashboard() {
           {data.question_analytics.map((qa) => (
             <details key={qa.question_number} className="group rounded-xl overflow-hidden" style={{ background: 'var(--color-bg-elevated)', border: '1px solid var(--color-border)' }}>
               <summary className="px-4 py-3 cursor-pointer flex items-center justify-between text-sm font-medium hover:opacity-80">
-                <span>Q{qa.question_number}: {qa.question_text.slice(0, 80)}...</span>
+                <span>Q{qa.question_number}: {qa.question_text}</span>
                 <span className="font-bold" style={{ color: qa.evaluation.overall_score >= 7 ? 'var(--color-success)' : qa.evaluation.overall_score >= 4 ? 'var(--color-warning)' : 'var(--color-danger)' }}>
                   {qa.evaluation.overall_score.toFixed(1)}/10
                 </span>

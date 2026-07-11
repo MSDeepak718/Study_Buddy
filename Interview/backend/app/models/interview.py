@@ -15,6 +15,11 @@ class Difficulty(str, enum.Enum):
     HARD = "hard"
 
 
+class InterviewMode(str, enum.Enum):
+    CHAT = "chat"
+    VOICE = "voice"
+
+
 class SessionStatus(str, enum.Enum):
     PENDING = "pending"
     IN_PROGRESS = "in_progress"
@@ -39,6 +44,9 @@ class InterviewConfiguration(Base):
     duration_minutes: Mapped[int] = mapped_column(Integer, default=30)
     num_questions: Mapped[int] = mapped_column(Integer, default=10)
     document_ids: Mapped[dict] = mapped_column(JSON, default=list)
+    interview_mode: Mapped[InterviewMode] = mapped_column(
+        SAEnum(InterviewMode, values_callable=lambda x: [e.value for e in x]), default=InterviewMode.CHAT
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )

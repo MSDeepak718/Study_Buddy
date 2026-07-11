@@ -11,6 +11,7 @@ class InterviewConfigRequest(BaseModel):
     duration_minutes: int = Field(default=30, ge=5, le=60)
     num_questions: int = Field(default=10, ge=5, le=50)
     document_ids: list[str] = Field(default_factory=list)
+    interview_mode: str = Field(default="chat", pattern="^(chat|voice)$")
 
 
 class InterviewConfigResponse(BaseModel):
@@ -21,6 +22,7 @@ class InterviewConfigResponse(BaseModel):
     duration_minutes: int
     num_questions: int
     document_ids: list[str]
+    interview_mode: str = "chat"
     created_at: datetime
 
     model_config = {"from_attributes": True}
@@ -81,11 +83,20 @@ class SessionInfoResponse(BaseModel):
     total_questions: int
     answered_questions: int
     duration_minutes: int
+    interview_mode: str = "chat"
     overall_score: float | None
     started_at: datetime | None
     completed_at: datetime | None
     history: list[HistoricQuestionResponse] = Field(default_factory=list)
 
+
+class VoiceTranscriptEntry(BaseModel):
+    speaker: str
+    text: str
+    timestamp: int
+
+class VoiceInterviewCompleteRequest(BaseModel):
+    transcript: list[VoiceTranscriptEntry]
 
 # Update forward reference
 SubmitAnswerResponse.model_rebuild()

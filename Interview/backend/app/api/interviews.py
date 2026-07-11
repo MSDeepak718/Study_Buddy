@@ -43,6 +43,7 @@ def create_configuration(config: InterviewConfigRequest, db: Session = Depends(g
         id=result.id, title=result.title, topics=result.topics or [],
         difficulty=result.difficulty.value, duration_minutes=result.duration_minutes,
         num_questions=result.num_questions, document_ids=result.document_ids or [],
+        interview_mode=result.interview_mode.value if result.interview_mode else "chat",
         created_at=result.created_at,
     )
 
@@ -54,6 +55,7 @@ def list_configurations(db: Session = Depends(get_db)):
         id=c.id, title=c.title, topics=c.topics or [],
         difficulty=c.difficulty.value, duration_minutes=c.duration_minutes,
         num_questions=c.num_questions, document_ids=c.document_ids or [],
+        interview_mode=c.interview_mode.value if c.interview_mode else "chat",
         created_at=c.created_at,
     ) for c in configs]
 
@@ -64,6 +66,21 @@ def delete_configuration(config_id: str, db: Session = Depends(get_db)):
     if not success:
         raise HTTPException(404, "Configuration not found")
     return {"message": "Configuration deleted successfully"}
+
+
+@router.put("/configurations/{config_id}", response_model=InterviewConfigResponse)
+def update_configuration(config_id: str, config: InterviewConfigRequest, db: Session = Depends(get_db)):
+    try:
+        updated = interview_service.update_configuration(db, config_id, config.model_dump())
+        return InterviewConfigResponse(
+            id=updated.id, title=updated.title, topics=updated.topics or [],
+            difficulty=updated.difficulty.value, duration_minutes=updated.duration_minutes,
+            num_questions=updated.num_questions, document_ids=updated.document_ids or [],
+            interview_mode=updated.interview_mode.value if updated.interview_mode else "chat",
+            created_at=updated.created_at,
+        )
+    except ValueError as e:
+        raise HTTPException(404, str(e))
 
 
 @router.post("/start", response_model=StartInterviewResponse)
@@ -82,6 +99,7 @@ def start_interview(req: StartInterviewRequest, db: Session = Depends(get_db)):
                 id=config.id, title=config.title, topics=config.topics or [],
                 difficulty=config.difficulty.value, duration_minutes=config.duration_minutes,
                 num_questions=config.num_questions, document_ids=config.document_ids or [],
+                interview_mode=config.interview_mode.value if config.interview_mode else "chat",
                 created_at=config.created_at,
             ),
             message="Interview started",
@@ -129,6 +147,7 @@ def get_session(session_id: str, db: Session = Depends(get_db)):
         topics=config.topics or [], difficulty=config.difficulty.value,
         total_questions=config.num_questions, answered_questions=answered,
         duration_minutes=config.duration_minutes,
+        interview_mode=config.interview_mode.value if config.interview_mode else "chat",
         overall_score=session.overall_score, started_at=session.started_at,
         completed_at=session.completed_at,
         history=history,
@@ -193,5 +212,6 @@ def list_sessions(student_id: str = None, db: Session = Depends(get_db)):
         total_questions=s.configuration.num_questions,
         answered_questions=len([q for q in s.questions if q.answer]),
         duration_minutes=s.configuration.duration_minutes,
+        interview_mode=s.configuration.interview_mode.value if s.configuration.interview_mode else "chat",
         overall_score=s.overall_score, started_at=s.started_at, completed_at=s.completed_at,
     ) for s in sessions]

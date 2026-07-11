@@ -22,6 +22,7 @@ class InterviewService:
         self, db: Session, admin_id: str, config_data: dict
     ) -> InterviewConfiguration:
         """Create a new interview configuration."""
+        from app.models.interview import InterviewMode
         config = InterviewConfiguration(
             created_by=admin_id,
             title=config_data["title"],
@@ -30,6 +31,7 @@ class InterviewService:
             duration_minutes=config_data.get("duration_minutes", 30),
             num_questions=config_data.get("num_questions", 10),
             document_ids=config_data.get("document_ids", []),
+            interview_mode=InterviewMode(config_data.get("interview_mode", "chat")),
         )
         db.add(config)
         db.commit()
@@ -44,6 +46,39 @@ class InterviewService:
             .order_by(InterviewConfiguration.created_at.desc())
             .all()
         )
+
+    def update_configuration(
+        self, db: Session, config_id: str, config_data: dict
+    ) -> InterviewConfiguration:
+        """Update an existing interview configuration."""
+        config = (
+            db.query(InterviewConfiguration)
+            .filter(InterviewConfiguration.id == config_id)
+            .first()
+        )
+        if not config:
+            raise ValueError(f"Configuration not found: {config_id}")
+
+        if "title" in config_data:
+            config.title = config_data["title"]
+        if "topics" in config_data:
+            config.topics = config_data["topics"]
+        if "difficulty" in config_data:
+            config.difficulty = Difficulty(config_data["difficulty"])
+        if "duration_minutes" in config_data:
+            config.duration_minutes = config_data["duration_minutes"]
+        if "num_questions" in config_data:
+            config.num_questions = config_data["num_questions"]
+        if "document_ids" in config_data:
+            config.document_ids = config_data["document_ids"]
+        if "interview_mode" in config_data:
+            from app.models.interview import InterviewMode
+            config.interview_mode = InterviewMode(config_data["interview_mode"])
+
+        db.commit()
+        db.refresh(config)
+        logger.info(f"Updated interview config: {config.id}")
+        return config
 
     def delete_configuration(self, db: Session, config_id: str) -> bool:
         """Delete an interview configuration and all its associated sessions, questions, answers, and evaluations."""

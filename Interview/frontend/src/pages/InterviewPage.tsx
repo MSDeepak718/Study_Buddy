@@ -5,6 +5,8 @@ import { getSession, generateQuestion, submitAnswer, completeInterview } from '.
 import type { SessionInfo, QuestionData, EvaluationResult } from '../types';
 import LoadingSpinner from '../components/LoadingSpinner';
 import VoiceInterviewPage from './VoiceInterviewPage';
+import { useAuth } from '../context/AuthContext';
+import { Robot, User, ArrowRight, Clock, StopCircle } from '@phosphor-icons/react';
 
 interface ChatMessage {
   type: 'question' | 'answer' | 'evaluation' | 'system';
@@ -22,6 +24,7 @@ const formatTime = (sec: number) => {
 export default function InterviewPage() {
   const { sessionId } = useParams<{ sessionId: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [session, setSession] = useState<SessionInfo | null>(null);
   const [voiceMode, setVoiceMode] = useState<boolean | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -230,20 +233,21 @@ export default function InterviewPage() {
                    color: timeLeft < 60 ? 'var(--color-danger)' : 'var(--color-text-primary)',
                    background: timeLeft < 60 ? 'rgba(239, 68, 68, 0.1)' : 'var(--color-bg-elevated)'
                  }}>
-              <span className={timeLeft < 60 ? 'animate-pulse' : ''}>Time Left: </span>
+              <Clock size={16} weight="bold" className={timeLeft < 60 ? 'animate-pulse' : ''} />
               <span>{formatTime(timeLeft)}</span>
             </div>
           )}
           {!finished && (
             <button onClick={() => { if(confirm('Are you sure you want to end the interview early?')) handleComplete('force_quit'); }}
-              className="px-3 py-1.5 rounded-xl text-xs font-medium border hover:bg-[rgba(239,68,68,0.1)] transition-colors"
+              className="px-3 py-1.5 rounded-xl text-xs font-semibold border flex items-center gap-1.5 hover:bg-[rgba(239,68,68,0.1)] transition-colors cursor-pointer"
               style={{ borderColor: 'var(--color-danger)', color: 'var(--color-danger)' }}>
+              <StopCircle size={16} weight="bold" />
               End Interview
             </button>
           )}
           {/* Progress */}
           <div className="flex flex-col items-end gap-1">
-            <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
+            <span className="text-xs font-medium" style={{ color: 'var(--color-text-muted)' }}>
               {progressPercentage}% Completed
             </span>
             <div className="w-32 h-2 rounded-full" style={{ background: 'var(--color-bg-input)' }}>
@@ -256,8 +260,9 @@ export default function InterviewPage() {
           </div>
           {finished && (
             <button onClick={() => navigate(`/analytics/${sessionId}`)}
-              className="px-4 py-2 rounded-xl text-sm font-medium" style={{ background: 'var(--color-primary)', color: '#fff' }}>
-              View Analytics →
+              className="px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-1.5 cursor-pointer" style={{ background: 'var(--color-primary)', color: '#fff' }}>
+              View Analytics
+              <ArrowRight size={16} weight="bold" />
             </button>
           )}
         </div>
@@ -278,7 +283,9 @@ export default function InterviewPage() {
 
               {msg.type === 'question' && (
                 <div className="flex gap-3">
-                  <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-sm" style={{ background: 'var(--gradient-primary)' }}>AI</div>
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 shadow-md" style={{ background: 'var(--gradient-primary)' }}>
+                    <Robot size={18} color="#fff" weight="bold" />
+                  </div>
                   <div className="max-w-[80%]">
                     <span className="text-xs font-medium mb-1 block" style={{ color: 'var(--color-primary-light)' }}>Question {msg.questionNum}</span>
                     <div className="px-4 py-3 rounded-2xl rounded-tl-sm text-sm" style={{ background: 'var(--color-bg-elevated)', border: '1px solid var(--color-border)' }}>
@@ -295,7 +302,9 @@ export default function InterviewPage() {
                       {msg.content}
                     </div>
                   </div>
-                  <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-sm" style={{ background: 'var(--color-bg-elevated)' }}>👤</div>
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-xs font-bold shadow-md" style={{ background: 'var(--color-primary-dark)', color: '#fff' }}>
+                    {user?.name ? user.name.charAt(0).toUpperCase() : <User size={16} color="#fff" weight="bold" />}
+                  </div>
                 </div>
               )}
 

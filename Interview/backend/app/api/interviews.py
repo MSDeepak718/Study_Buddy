@@ -12,32 +12,18 @@ from app.schemas.evaluation import EvaluationResult
 from app.services.interview_service import interview_service
 from app.services.evaluation_service import evaluation_service
 
+from app.utils.deps import require_admin, get_current_user_optional, get_current_user
+
 router = APIRouter(prefix="/interviews", tags=["Interviews"])
 
 
-def get_or_create_student(db: Session) -> User:
-    student = db.query(User).filter(User.role == UserRole.STUDENT).first()
-    if not student:
-        student = User(name="Student", email="student@interview.ai", role=UserRole.STUDENT)
-        db.add(student)
-        db.commit()
-        db.refresh(student)
-    return student
-
-
-def get_or_create_admin(db: Session) -> User:
-    admin = db.query(User).filter(User.role == UserRole.ADMIN).first()
-    if not admin:
-        admin = User(name="Admin", email="admin@interview.ai", role=UserRole.ADMIN)
-        db.add(admin)
-        db.commit()
-        db.refresh(admin)
-    return admin
-
-
 @router.post("/configure", response_model=InterviewConfigResponse)
-def create_configuration(config: InterviewConfigRequest, db: Session = Depends(get_db)):
-    admin = get_or_create_admin(db)
+def create_configuration(
+    config: InterviewConfigRequest,
+    db: Session = Depends(get_db),
+    admin: User = Depends(require_admin),
+):
+    """Create a new interview configuration. Protected: Admin only."""
     result = interview_service.create_configuration(db, admin.id, config.model_dump())
     return InterviewConfigResponse(
         id=result.id, title=result.title, topics=result.topics or [],
@@ -61,7 +47,12 @@ def list_configurations(db: Session = Depends(get_db)):
 
 
 @router.delete("/configurations/{config_id}")
-def delete_configuration(config_id: str, db: Session = Depends(get_db)):
+def delete_configuration(
+    config_id: str,
+    db: Session = Depends(get_db),
+    admin: User = Depends(require_admin),
+):
+    """Delete an interview configuration. Protected: Admin only."""
     success = interview_service.delete_configuration(db, config_id)
     if not success:
         raise HTTPException(404, "Configuration not found")
@@ -69,7 +60,13 @@ def delete_configuration(config_id: str, db: Session = Depends(get_db)):
 
 
 @router.put("/configurations/{config_id}", response_model=InterviewConfigResponse)
-def update_configuration(config_id: str, config: InterviewConfigRequest, db: Session = Depends(get_db)):
+def update_configuration(
+    config_id: str,
+    config: InterviewConfigRequest,
+    db: Session = Depends(get_db),
+    admin: User = Depends(require_admin),
+):
+    """Update an interview configuration. Protected: Admin only."""
     try:
         updated = interview_service.update_configuration(db, config_id, config.model_dump())
         return InterviewConfigResponse(
@@ -84,11 +81,23 @@ def update_configuration(config_id: str, config: InterviewConfigRequest, db: Ses
 
 
 @router.post("/start", response_model=StartInterviewResponse)
-def start_interview(req: StartInterviewRequest, db: Session = Depends(get_db)):
+def start_interview(
+    req: StartInterviewRequest,
+    db: Session = Depends(get_db),
+    current_user: User | None = Depends(get_current_user_optional),
+):
     try:
         student_id = req.student_id
-        if student_id == "default":
-            student = get_or_create_student(db)
+        if current_user:
+            student_id = current_user.id
+        elif student_id == "default":
+            # Fallback for dev/unauthenticated candidate session creation
+            student = db.query(User).filter(User.role == UserRole.STUDENT).first()
+            if not student:
+                student = User(name="Student Candidate", email="student@interview.ai", role=UserRole.STUDENT)
+                db.add(student)
+                db.commit()
+                db.refresh(student)
             student_id = student.id
             
         session = interview_service.start_session(db, req.config_id, student_id)
@@ -201,10 +210,19 @@ def complete_interview(session_id: str, db: Session = Depends(get_db)):
 
 
 @router.get("/sessions/list")
-def list_sessions(student_id: str = None, db: Session = Depends(get_db)):
-    if student_id == "default":
-        student = get_or_create_student(db)
-        student_id = student.id
+def list_sessions(
+    student_id: str = None,
+    db: Session = Depends(get_db),
+    current_user: User | None = Depends(get_current_user_optional),
+):
+    if current_user:
+        if current_user.role == UserRole.STUDENT:
+            student_id = current_user.id
+    elif student_id == "default":
+        student = db.query(User).filter(User.role == UserRole.STUDENT).first()
+        if student:
+            student_id = student.id
+
     sessions = interview_service.list_sessions(db, student_id)
     return [SessionInfoResponse(
         session_id=s.id, status=s.status.value, title=s.configuration.title,

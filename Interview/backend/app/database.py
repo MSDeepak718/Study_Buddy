@@ -66,3 +66,45 @@ def create_tables():
                 conn.commit()
     except Exception:
         pass
+
+    # Auto-migrate: add hashed_password column to users
+    try:
+        with engine.connect() as conn:
+            res = conn.execute(text(
+                "SELECT column_name "
+                "FROM information_schema.columns "
+                "WHERE table_name='users' AND column_name='hashed_password'"
+            ))
+            if not res.fetchone():
+                conn.execute(text(
+                    "ALTER TABLE users ADD COLUMN hashed_password VARCHAR(255);"
+                ))
+                conn.commit()
+    except Exception:
+        pass
+
+    # Seed Admin User
+    try:
+        from app.models.user import User, UserRole
+        from app.utils.security import hash_password
+        db = SessionLocal()
+        try:
+            admin_emails = ["admin@123", "admin@123.com"]
+            for email_str in admin_emails:
+                admin_user = db.query(User).filter(User.email == email_str).first()
+                if not admin_user:
+                    admin_user = User(
+                        name="Platform Admin",
+                        email=email_str,
+                        hashed_password=hash_password("DeepakBhuvi"),
+                        role=UserRole.ADMIN,
+                    )
+                    db.add(admin_user)
+                else:
+                    admin_user.hashed_password = hash_password("DeepakBhuvi")
+                    admin_user.role = UserRole.ADMIN
+            db.commit()
+        finally:
+            db.close()
+    except Exception as e:
+        print(f"Error seeding admin user: {e}")

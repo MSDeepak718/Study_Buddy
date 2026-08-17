@@ -4,6 +4,7 @@ import { uploadDocument, listDocuments, deleteDocument, createConfig, listConfig
 import type { DocumentInfo, InterviewConfig } from '../types';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { useNavigate } from 'react-router-dom';
+import { FolderSimple, ChatCircleText, Microphone, Clock, PencilSimple, Trash, ArrowRight, DotsThreeVertical, FileText } from '@phosphor-icons/react';
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
@@ -112,20 +113,23 @@ export default function AdminDashboard() {
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
         <h1 className="text-3xl font-bold mb-2" style={{ background: 'var(--gradient-primary)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-          Dashboard
+          Admin Control Center
         </h1>
-        <p style={{ color: 'var(--color-text-muted)' }}>Upload documents, configure interviews, and launch sessions</p>
+        <p style={{ color: 'var(--color-text-muted)' }}>Upload documents, configure interview parameters, and start live sessions</p>
       </motion.div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Upload Section */}
         <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 }} className="glass rounded-2xl p-6">
-          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">Document Upload</h2>
+          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+            <FileText size={22} color="var(--color-primary)" weight="bold" />
+            Knowledge Base Upload
+          </h2>
           <label
             className="flex flex-col items-center justify-center p-8 rounded-xl cursor-pointer transition-all duration-300 hover:opacity-90"
             style={{ border: '2px dashed var(--color-border-light)', background: 'var(--color-bg-input)' }}
           >
-            <span className="text-4xl mb-2">🗁</span>
+            <FolderSimple size={40} color="var(--color-accent)" weight="bold" className="mb-2" />
             <span className="text-sm font-medium" style={{ color: 'var(--color-text-secondary)' }}>
               {uploading ? 'Processing...' : 'Drop PDF, DOCX, or TXT here'}
             </span>
@@ -144,14 +148,16 @@ export default function AdminDashboard() {
                 >
                   <div className="flex items-center gap-3">
                     <input type="checkbox" checked={selectedDocs.includes(doc.id)} onChange={() => toggleDoc(doc.id)}
-                      className="w-4 h-4 rounded accent-[var(--color-primary)]"
+                      className="w-4 h-4 rounded accent-[var(--color-primary)] cursor-pointer"
                     />
                     <div>
                       <p className="text-sm font-medium truncate max-w-[200px]">{doc.filename}</p>
                       <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>{doc.chunk_count} chunks • {doc.status}</p>
                     </div>
                   </div>
-                  <button onClick={() => handleDelete(doc.id)} className="text-xs px-2 py-1 rounded-lg hover:opacity-80" style={{ color: 'var(--color-danger)' }}>Delete</button>
+                  <button onClick={() => handleDelete(doc.id)} className="text-xs px-2 py-1 rounded-lg hover:opacity-80 flex items-center gap-1 cursor-pointer" style={{ color: 'var(--color-danger)' }}>
+                    <Trash size={14} weight="bold" /> Delete
+                  </button>
                 </motion.div>
               ))}
             </AnimatePresence>
@@ -172,7 +178,7 @@ export default function AdminDashboard() {
                   setTitle(''); setTopics(''); setSelectedDocs([]);
                   setDifficulty('medium'); setDuration(30); setNumQuestions(5); setInterviewMode('chat');
                 }}
-                className="text-xs px-2 py-1 rounded-lg border hover:bg-[rgba(255,255,255,0.05)]"
+                className="text-xs px-2.5 py-1 rounded-lg border hover:bg-[rgba(255,255,255,0.05)] cursor-pointer"
                 style={{ borderColor: 'var(--color-border)', color: 'var(--color-text-secondary)' }}
               >
                 Cancel Edit
@@ -184,7 +190,7 @@ export default function AdminDashboard() {
               <label className="block text-sm font-medium mb-1" style={{ color: 'var(--color-text-secondary)' }}>Title</label>
               <input type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder="e.g., React Fundamentals Interview"
                 className="w-full px-4 py-3 rounded-xl text-sm outline-none transition-all duration-200 focus:ring-2"
-                style={{ background: 'var(--color-bg-input)', color: 'var(--color-text-primary)', border: '1px solid var(--color-border)', '--tw-ring-color': 'var(--color-primary)' } as React.CSSProperties}
+                style={{ background: 'var(--color-bg-input)', color: 'var(--color-text-primary)', border: '1px solid var(--color-border)' }}
               />
             </div>
 
@@ -200,7 +206,7 @@ export default function AdminDashboard() {
               <div>
                 <label className="block text-sm font-medium mb-1" style={{ color: 'var(--color-text-secondary)' }}>Difficulty</label>
                 <select value={difficulty} onChange={e => setDifficulty(e.target.value)}
-                  className="w-full px-3 py-3 rounded-xl text-sm outline-none"
+                  className="w-full px-3 py-3 rounded-xl text-sm outline-none cursor-pointer"
                   style={{ background: 'var(--color-bg-input)', color: 'var(--color-text-primary)', border: '1px solid var(--color-border)' }}
                 >
                   <option value="easy">Easy</option>
@@ -229,37 +235,39 @@ export default function AdminDashboard() {
               <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text-secondary)' }}>Interview Mode</label>
               <div className="flex gap-2">
                 <button type="button" onClick={() => setInterviewMode('chat')}
-                  className="flex-1 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-2"
+                  className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 cursor-pointer"
                   style={{
                     background: interviewMode === 'chat' ? 'var(--color-primary)' : 'var(--color-bg-input)',
                     color: interviewMode === 'chat' ? '#fff' : 'var(--color-text-secondary)',
                     border: `1px solid ${interviewMode === 'chat' ? 'var(--color-primary)' : 'var(--color-border)'}`,
                   }}>
-                  💬 Chat
+                  <ChatCircleText size={18} weight="bold" />
+                  Chat Mode
                 </button>
                 <button type="button" onClick={() => setInterviewMode('voice')}
-                  className="flex-1 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-2"
+                  className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 cursor-pointer"
                   style={{
                     background: interviewMode === 'voice' ? 'var(--color-primary)' : 'var(--color-bg-input)',
                     color: interviewMode === 'voice' ? '#fff' : 'var(--color-text-secondary)',
                     border: `1px solid ${interviewMode === 'voice' ? 'var(--color-primary)' : 'var(--color-border)'}`,
                   }}>
-                  🎤 Voice
+                  <Microphone size={18} weight="bold" />
+                  Voice Mode
                 </button>
               </div>
             </div>
 
             {selectedDocs.length > 0 && (
-              <p className="text-xs" style={{ color: 'var(--color-accent)' }}>
+              <p className="text-xs font-medium" style={{ color: 'var(--color-accent)' }}>
                 {selectedDocs.length} document{selectedDocs.length > 1 ? 's' : ''} selected as knowledge base
               </p>
             )}
 
             <button type="submit" disabled={creating || !title.trim()}
-              className="w-full py-3 rounded-xl text-sm font-semibold transition-all duration-300 disabled:opacity-50"
+              className="w-full py-3 rounded-xl text-sm font-bold transition-all duration-300 disabled:opacity-50 cursor-pointer"
               style={{ background: 'var(--gradient-primary)', color: '#fff', boxShadow: '0 4px 20px rgba(129, 255, 107, 0.41)'}}
             >
-              {creating ? (editingConfigId ? 'Updating...' : 'Creating...') : (editingConfigId ? 'Update Configuration' : 'Create')}
+              {creating ? (editingConfigId ? 'Updating...' : 'Creating...') : (editingConfigId ? 'Update Configuration' : 'Create Interview Template')}
             </button>
           </form>
         </motion.div>
@@ -267,7 +275,7 @@ export default function AdminDashboard() {
 
       {/* Configurations List */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="mt-8 glass rounded-2xl p-6">
-        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">Ready Interviews</h2>
+        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">Ready Interview Templates</h2>
         {configs.length === 0 ? (
           <p className="text-sm text-center py-8" style={{ color: 'var(--color-text-muted)' }}>No configurations yet. Create one above!</p>
         ) : (
@@ -282,14 +290,11 @@ export default function AdminDashboard() {
                         e.stopPropagation();
                         setActiveMenuId(activeMenuId === cfg.id ? null : cfg.id);
                       }}
-                      className="p-1 rounded-lg hover:bg-[rgba(255,255,255,0.08)] transition-colors flex items-center justify-center"
+                      className="p-1 rounded-lg hover:bg-[rgba(255,255,255,0.08)] transition-colors flex items-center justify-center cursor-pointer"
                       style={{ color: 'var(--color-text-secondary)' }}
                       title="Menu"
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.75a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3ZM12 12a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3ZM12 17.25a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3Z" />
-                      </svg>
-
+                      <DotsThreeVertical size={20} weight="bold" />
                     </button>
                     {activeMenuId === cfg.id && (
                       <div
@@ -310,9 +315,10 @@ export default function AdminDashboard() {
                             setInterviewMode((cfg.interview_mode || 'chat') as 'chat' | 'voice');
                             window.scrollTo({ top: 0, behavior: 'smooth' });
                           }}
-                          className="w-full text-left px-3 py-1.5 text-xs font-medium hover:bg-[rgba(255,255,255,0.05)] transition-colors flex items-center gap-2"
+                          className="w-full text-left px-3 py-1.5 text-xs font-medium hover:bg-[rgba(255,255,255,0.05)] transition-colors flex items-center gap-2 cursor-pointer"
                           style={{ color: 'var(--color-text-primary)' }}
                         >
+                          <PencilSimple size={14} weight="bold" />
                           Edit
                         </button>
                         <button
@@ -323,9 +329,10 @@ export default function AdminDashboard() {
                               await handleDeleteConfig(cfg.id);
                             }
                           }}
-                          className="w-full text-left px-3 py-1.5 text-xs font-medium hover:bg-[rgba(255,255,255,0.05)] transition-colors flex items-center gap-2"
-                          style={{ color: 'var(--color-text-primary)' }}
+                          className="w-full text-left px-3 py-1.5 text-xs font-medium hover:bg-[rgba(255,255,255,0.05)] transition-colors flex items-center gap-2 cursor-pointer"
+                          style={{ color: 'var(--color-danger)' }}
                         >
+                          <Trash size={14} weight="bold" />
                           Delete
                         </button>
                       </div>
@@ -336,20 +343,29 @@ export default function AdminDashboard() {
                   <p>Topics: {cfg.topics?.join(', ') || 'General'}</p>
                   <p>Difficulty: <span className="capitalize" style={{ color: cfg.difficulty === 'hard' ? 'var(--color-danger)' : cfg.difficulty === 'medium' ? 'var(--color-warning)' : 'var(--color-success)' }}>{cfg.difficulty}</span></p>
                   <p className="flex items-center gap-2">
-                    {cfg.num_questions} questions • ⏱️ {cfg.duration_minutes} min
-                    <span className="px-1.5 py-0.5 rounded text-[10px] font-bold" style={{
+                    <Clock size={12} weight="bold" /> {cfg.duration_minutes} min • {cfg.num_questions} questions
+                    <span className="px-1.5 py-0.5 rounded text-[10px] font-bold flex items-center gap-1" style={{
                       background: cfg.interview_mode === 'voice' ? 'rgba(134, 194, 50, 0.2)' : 'rgba(100, 100, 100, 0.2)',
                       color: cfg.interview_mode === 'voice' ? 'var(--color-primary)' : 'var(--color-text-muted)',
                     }}>
-                      {cfg.interview_mode === 'voice' ? '🎤 VOICE' : '💬 CHAT'}
+                      {cfg.interview_mode === 'voice' ? (
+                        <>
+                          <Microphone size={10} weight="bold" /> VOICE
+                        </>
+                      ) : (
+                        <>
+                          <ChatCircleText size={10} weight="bold" /> CHAT
+                        </>
+                      )}
                     </span>
                   </p>
                 </div>
                 <button onClick={() => handleStartInterview(cfg.id)}
-                  className="w-full py-2 rounded-lg text-sm font-medium transition-all hover:opacity-90"
+                  className="w-full py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-1.5 transition-all hover:opacity-90 cursor-pointer"
                   style={{ background: 'var(--color-primary)', color: '#fff' }}
                 >
-                  Start Interview →
+                  Start Interview
+                  <ArrowRight size={16} weight="bold" />
                 </button>
               </motion.div>
             ))}

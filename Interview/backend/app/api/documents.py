@@ -11,25 +11,20 @@ from app.schemas.document import DocumentUploadResponse, DocumentListResponse, D
 from app.services.document_service import document_service
 from app.utils.parsing import get_supported_extensions
 
+from app.utils.deps import require_admin
+
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/documents", tags=["Documents"])
 settings = get_settings()
 
 
-def get_or_create_admin(db: Session) -> User:
-    """Get or create default admin user for development."""
-    admin = db.query(User).filter(User.role == UserRole.ADMIN).first()
-    if not admin:
-        admin = User(name="Admin", email="admin@interview.ai", role=UserRole.ADMIN)
-        db.add(admin)
-        db.commit()
-        db.refresh(admin)
-    return admin
-
-
 @router.post("/upload", response_model=DocumentUploadResponse)
-async def upload_document(file: UploadFile = File(...), db: Session = Depends(get_db)):
-    """Upload and process a document (PDF, DOCX, or TXT)."""
+async def upload_document(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    admin: User = Depends(require_admin),
+):
+    """Upload and process a document (PDF, DOCX, or TXT). Protected: Admin only."""
     ext = Path(file.filename or "").suffix.lower()
     if ext not in get_supported_extensions():
         raise HTTPException(400, f"Unsupported file type: {ext}")
@@ -38,7 +33,6 @@ async def upload_document(file: UploadFile = File(...), db: Session = Depends(ge
     if len(content) > settings.MAX_FILE_SIZE_MB * 1024 * 1024:
         raise HTTPException(400, f"File too large. Max: {settings.MAX_FILE_SIZE_MB}MB")
 
-    admin = get_or_create_admin(db)
     file_path, content_hash = document_service.save_uploaded_file(content, file.filename or "document")
 
     doc = UploadedDocument(uploaded_by=admin.id, filename=file.filename or "document", file_path=file_path, content_hash=content_hash, status=DocumentStatus.PROCESSING)
@@ -65,8 +59,8 @@ def list_documents(db: Session = Depends(get_db)):
 
 
 @router.delete("/{document_id}")
-def delete_document(document_id: str, db: Session = Depends(get_db)):
-    """Delete a document and its vector embeddings."""
+def delete_document(document_id: str, db: Session = Depends(get_db), admin: User = Depends(require_admin)):
+    """Delete a document and its vector embeddings. Protected: Admin only."""
     if document_service.delete_document(db, document_id):
         return {"message": "Document deleted"}
     raise HTTPException(404, "Document not found")

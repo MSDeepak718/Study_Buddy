@@ -4,6 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { getSession, completeVoiceInterview } from '../services/api';
 import type { SessionInfo } from '../types';
 import LoadingSpinner from '../components/LoadingSpinner';
+import { useAuth } from '../context/AuthContext';
+import { Microphone, Robot, User, Clock, StopCircle, ArrowRight } from '@phosphor-icons/react';
 
 interface TranscriptEntry {
   speaker: 'user' | 'ai' | 'system';
@@ -31,6 +33,7 @@ const NOISE_THRESHOLD = 400; // RMS below this is considered silence/noise
 export default function VoiceInterviewPage() {
   const { sessionId } = useParams<{ sessionId: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [session, setSession] = useState<SessionInfo | null>(null);
   const [connected, setConnected] = useState(false);
   const [connecting, setConnecting] = useState(false);
@@ -362,7 +365,8 @@ export default function VoiceInterviewPage() {
             {session.title}
           </h1>
           <p className="text-xs flex items-center gap-2" style={{ color: 'var(--color-text-muted)' }}>
-            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold" style={{ background: 'rgba(134, 194, 50, 0.2)', color: 'var(--color-primary)' }}>
+            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold flex items-center gap-1" style={{ background: 'rgba(134, 194, 50, 0.2)', color: 'var(--color-primary)' }}>
+              <Microphone size={12} weight="bold" />
               VOICE
             </span>
             {session.difficulty} • {session.total_questions} questions
@@ -376,21 +380,23 @@ export default function VoiceInterviewPage() {
                    color: timeLeft < 60 ? 'var(--color-danger)' : 'var(--color-text-primary)',
                    background: timeLeft < 60 ? 'rgba(239, 68, 68, 0.1)' : 'var(--color-bg-elevated)'
                  }}>
-              <span className={timeLeft < 60 ? 'animate-pulse' : ''}>⏱</span>
+              <Clock size={16} weight="bold" className={timeLeft < 60 ? 'animate-pulse' : ''} />
               <span>{formatTime(timeLeft)}</span>
             </div>
           )}
           {!finished && connected && (
             <button onClick={() => { if (confirm('End the interview early?')) handleEndInterview('force_quit'); }}
-              className="px-3 py-1.5 rounded-xl text-xs font-medium border hover:bg-[rgba(239,68,68,0.1)] transition-colors"
+              className="px-3 py-1.5 rounded-xl text-xs font-semibold border flex items-center gap-1.5 hover:bg-[rgba(239,68,68,0.1)] transition-colors cursor-pointer"
               style={{ borderColor: 'var(--color-danger)', color: 'var(--color-danger)' }}>
+              <StopCircle size={16} weight="bold" />
               End Interview
             </button>
           )}
           {finished && (
             <button onClick={() => navigate(`/analytics/${sessionId}`)}
-              className="px-4 py-2 rounded-xl text-sm font-medium" style={{ background: 'var(--color-primary)', color: '#fff' }}>
-              View Analytics →
+              className="px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-1.5 cursor-pointer" style={{ background: 'var(--color-primary)', color: '#fff' }}>
+              View Analytics
+              <ArrowRight size={16} weight="bold" />
             </button>
           )}
         </div>
@@ -412,7 +418,9 @@ export default function VoiceInterviewPage() {
                 )}
                 {entry.speaker === 'ai' && (
                   <div className="flex gap-3">
-                    <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-sm" style={{ background: 'var(--gradient-primary)' }}>AI</div>
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 shadow-md" style={{ background: 'var(--gradient-primary)' }}>
+                      <Robot size={18} color="#fff" weight="bold" />
+                    </div>
                     <div className="max-w-[80%]">
                       <div className="px-4 py-3 rounded-2xl rounded-tl-sm text-sm" style={{ background: 'var(--color-bg-elevated)', border: '1px solid var(--color-border)' }}>
                         {entry.text}
@@ -427,7 +435,9 @@ export default function VoiceInterviewPage() {
                         {entry.text}
                       </div>
                     </div>
-                    <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-sm" style={{ background: 'var(--color-bg-elevated)' }}>👤</div>
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-xs font-bold shadow-md" style={{ background: 'var(--color-primary-dark)', color: '#fff' }}>
+                      {user?.name ? user.name.charAt(0).toUpperCase() : <User size={16} color="#fff" weight="bold" />}
+                    </div>
                   </div>
                 )}
               </motion.div>
@@ -441,13 +451,13 @@ export default function VoiceInterviewPage() {
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass rounded-2xl p-6">
             {!connected && !connecting && (
               <div className="flex flex-col items-center gap-4">
-                <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+                <p className="text-sm font-medium" style={{ color: 'var(--color-text-secondary)' }}>
                   Click the button below to start the voice interview session
                 </p>
                 <button onClick={startVoiceSession}
-                  className="w-20 h-20 rounded-full flex items-center justify-center text-3xl transition-all hover:scale-105"
+                  className="w-20 h-20 rounded-full flex items-center justify-center text-3xl transition-all hover:scale-105 cursor-pointer shadow-xl"
                   style={{ background: 'var(--gradient-primary)', boxShadow: '0 0 30px rgba(134, 194, 50, 0.4)' }}>
-                  🎤
+                  <Microphone size={36} color="#fff" weight="bold" />
                 </button>
                 <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
                   Ensure your microphone is enabled
@@ -476,13 +486,13 @@ export default function VoiceInterviewPage() {
                       }}
                       transition={{ duration: 0.6, repeat: userSpeaking ? Infinity : 0 }}
                     />
-                    <div className="w-14 h-14 rounded-full flex items-center justify-center text-xl relative z-10"
+                    <div className="w-14 h-14 rounded-full flex items-center justify-center relative z-10"
                       style={{
                         background: userSpeaking ? 'var(--gradient-primary)' : 'var(--color-bg-elevated)',
                         border: `2px solid ${userSpeaking ? 'var(--color-primary)' : 'var(--color-border)'}`,
                         transition: 'all 0.2s',
                       }}>
-                      🎤
+                      <Microphone size={24} color={userSpeaking ? '#fff' : 'var(--color-text-secondary)'} weight="bold" />
                     </div>
                   </div>
                   <div>

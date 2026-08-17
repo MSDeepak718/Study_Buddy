@@ -1,14 +1,18 @@
 import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 import { getDashboard } from '../services/api';
 import type { DashboardData } from '../types';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ScoreCard from '../components/ScoreCard';
+import { useAuth } from '../context/AuthContext';
+import { ArrowLeft } from '@phosphor-icons/react';
 
 export default function AnalyticsDashboard() {
   const { sessionId } = useParams<{ sessionId: string }>();
+  const navigate = useNavigate();
+  const { isAdmin } = useAuth();
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -36,11 +40,21 @@ export default function AnalyticsDashboard() {
   return (
     <div className="max-w-6xl mx-auto">
       {/* Header */}
-      <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
-        <h1 className="text-3xl font-bold mb-2" style={{ background: 'var(--gradient-primary)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-          Analytics Dashboard
-        </h1>
-        <p style={{ color: 'var(--color-text-muted)' }}>{data.title} - {data.status.charAt(0).toUpperCase() + data.status.slice(1).toLowerCase()}</p>
+      <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-8 flex items-center justify-between">
+        <div>
+          <button
+            onClick={() => navigate(isAdmin ? '/' : '/sessions')}
+            className="text-xs font-semibold mb-2 flex items-center gap-1.5 hover:opacity-80 transition-all cursor-pointer"
+            style={{ color: 'var(--color-accent)' }}
+          >
+            <ArrowLeft size={16} weight="bold" />
+            {isAdmin ? 'Back to Admin Dashboard' : 'Back to My Sessions'}
+          </button>
+          <h1 className="text-3xl font-bold mb-1" style={{ background: 'var(--gradient-primary)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+            Interview Assessment Report
+          </h1>
+          <p style={{ color: 'var(--color-text-muted)' }}>{data.title} • {data.status.charAt(0).toUpperCase() + data.status.slice(1).toLowerCase()}</p>
+        </div>
       </motion.div>
 
       {/* Score Overview */}

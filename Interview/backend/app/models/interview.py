@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime, timezone
 from sqlalchemy import (
     String, Integer, Float, Text, ForeignKey,
-    DateTime, Enum as SAEnum, JSON
+    DateTime, Enum as SAEnum, JSON, Boolean
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.database import Base
@@ -18,12 +18,16 @@ class Difficulty(str, enum.Enum):
 class InterviewMode(str, enum.Enum):
     CHAT = "chat"
     VOICE = "voice"
+    DSA = "dsa"
+    SYSTEM_DESIGN = "system_design"
+    FULL_FLOW = "full_flow"
 
 
 class SessionStatus(str, enum.Enum):
     PENDING = "pending"
     IN_PROGRESS = "in_progress"
     COMPLETED = "completed"
+    FAILED = "failed"
     ABANDONED = "abandoned"
 
 
@@ -47,6 +51,10 @@ class InterviewConfiguration(Base):
     interview_mode: Mapped[InterviewMode] = mapped_column(
         SAEnum(InterviewMode, values_callable=lambda x: [e.value for e in x]), default=InterviewMode.CHAT
     )
+    invite_code: Mapped[str] = mapped_column(
+        String(64), unique=True, index=True, default=lambda: uuid.uuid4().hex[:8]
+    )
+    dsa_problems: Mapped[dict | None] = mapped_column(JSON, nullable=True, default=list)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
@@ -74,6 +82,9 @@ class InterviewSession(Base):
     status: Mapped[SessionStatus] = mapped_column(
         SAEnum(SessionStatus), default=SessionStatus.PENDING
     )
+    current_stage: Mapped[str] = mapped_column(
+        String(50), default="one_on_one", nullable=False
+    )
     started_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
@@ -82,6 +93,11 @@ class InterviewSession(Base):
     )
     overall_score: Mapped[float | None] = mapped_column(Float, nullable=True)
     recommendations: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+
+    # Candidate Anti-Cheating & Attempt Tracking
+    attempt_count: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    max_attempts: Mapped[int] = mapped_column(Integer, default=2, nullable=False)
+    is_disqualified: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
     # Relationships
     configuration = relationship("InterviewConfiguration", back_populates="sessions")

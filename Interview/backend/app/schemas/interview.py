@@ -8,10 +8,11 @@ class InterviewConfigRequest(BaseModel):
     title: str = Field(..., min_length=1, max_length=500)
     topics: list[str] = Field(default_factory=list)
     difficulty: str = Field(default="medium", pattern="^(easy|medium|hard)$")
-    duration_minutes: int = Field(default=30, ge=5, le=60)
-    num_questions: int = Field(default=10, ge=5, le=50)
+    duration_minutes: int = Field(default=30, ge=5, le=180)
+    num_questions: int = Field(default=10, ge=1, le=50)
     document_ids: list[str] = Field(default_factory=list)
-    interview_mode: str = Field(default="chat", pattern="^(chat|voice)$")
+    interview_mode: str = Field(default="chat", pattern="^(chat|voice|dsa|system_design|full_flow)$")
+    dsa_problems: list[dict] = Field(default_factory=list)
 
 
 class InterviewConfigResponse(BaseModel):
@@ -23,6 +24,8 @@ class InterviewConfigResponse(BaseModel):
     num_questions: int
     document_ids: list[str]
     interview_mode: str = "chat"
+    invite_code: str = ""
+    dsa_problems: list[dict] = Field(default_factory=list)
     created_at: datetime
 
     model_config = {"from_attributes": True}
@@ -83,10 +86,16 @@ class SessionInfoResponse(BaseModel):
     total_questions: int
     answered_questions: int
     duration_minutes: int
+    dsa_problems: list[dict] = Field(default_factory=list)
     interview_mode: str = "chat"
     overall_score: float | None
     started_at: datetime | None
     completed_at: datetime | None
+    candidate_name: str | None = None
+    candidate_email: str | None = None
+    attempt_count: int = 1
+    max_attempts: int = 2
+    is_disqualified: bool = False
     history: list[HistoricQuestionResponse] = Field(default_factory=list)
 
 
@@ -98,7 +107,27 @@ class VoiceTranscriptEntry(BaseModel):
 class VoiceInterviewCompleteRequest(BaseModel):
     transcript: list[VoiceTranscriptEntry]
 
+
+class RunDSACodeRequest(BaseModel):
+    language: str
+    code: str
+    test_cases: list[dict]
+
+
+class SubmitDSASolutionRequest(BaseModel):
+    session_id: str
+    problem_index: int = 0
+    language: str
+    code: str
+
+
+class GenerateDSAProblemRequest(BaseModel):
+    topic: str = "Arrays"
+    difficulty: str = "Medium"
+
+
 # Update forward reference
 SubmitAnswerResponse.model_rebuild()
 HistoricQuestionResponse.model_rebuild()
 SessionInfoResponse.model_rebuild()
+

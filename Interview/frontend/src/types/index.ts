@@ -20,6 +20,25 @@ export interface DocumentInfo {
   created_at: string;
 }
 
+export interface TestCase {
+  input: string;
+  expected_output: string;
+}
+
+export interface DSAProblem {
+  title: string;
+  difficulty: string;
+  topic?: string;
+  description: string;
+  constraints?: string;
+  starter_code?: {
+    python?: string;
+    javascript?: string;
+  };
+  sample_test_cases?: TestCase[];
+  hidden_test_cases?: TestCase[];
+}
+
 export interface InterviewConfig {
   id: string;
   title: string;
@@ -28,7 +47,9 @@ export interface InterviewConfig {
   duration_minutes: number;
   num_questions: number;
   document_ids: string[];
-  interview_mode: string;
+  interview_mode: 'chat' | 'voice' | 'dsa' | 'system_design' | 'full_flow';
+  invite_code?: string;
+  dsa_problems?: DSAProblem[];
   created_at: string;
 }
 
@@ -39,7 +60,8 @@ export interface InterviewConfigRequest {
   duration_minutes: number;
   num_questions: number;
   document_ids: string[];
-  interview_mode: string;
+  interview_mode: 'chat' | 'voice' | 'dsa' | 'system_design' | 'full_flow';
+  dsa_problems?: DSAProblem[];
 }
 
 export interface StartInterviewRequest {
@@ -70,6 +92,12 @@ export interface SessionInfo {
   overall_score: number | null;
   started_at: string | null;
   completed_at: string | null;
+  candidate_name?: string;
+  candidate_email?: string;
+  attempt_count?: number;
+  max_attempts?: number;
+  is_disqualified?: boolean;
+  dsa_problems?: DSAProblem[];
   history?: HistoricQuestionData[];
 }
 
@@ -135,3 +163,28 @@ export interface DashboardData {
   evaluation_summary: Record<string, number>;
   recommendations: Recommendation | null;
 }
+
+export interface TestCaseResult {
+  input: string;
+  expected_output: string;
+  actual_output: string;
+  passed: boolean;
+  error?: string | null;
+  execution_time_ms: number;
+}
+
+export interface RunCodeResponse {
+  passed_count: number;
+  total_count: number;
+  test_results: TestCaseResult[];
+}
+
+export interface SubmitDSAResponse {
+  answer_id: string;
+  evaluation: EvaluationResult;
+  test_results: RunCodeResponse;
+  time_complexity: string;
+  space_complexity: string;
+  is_last_question: boolean;
+}
+

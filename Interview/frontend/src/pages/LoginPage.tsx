@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { loginUser, registerUser } from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -7,17 +7,21 @@ import { GraduationCap, ArrowRight } from '@phosphor-icons/react';
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, token, login } = useAuth();
+  const from = (location.state as any)?.from || new URLSearchParams(location.search).get('redirect');
 
   useEffect(() => {
     if (token && user) {
-      if (user.role === 'admin') {
+      if (from) {
+        navigate(from, { replace: true });
+      } else if (user.role === 'admin') {
         navigate('/', { replace: true });
       } else {
         navigate('/sessions', { replace: true });
       }
     }
-  }, [user, token, navigate]);
+  }, [user, token, navigate, from]);
 
   const [isRegister, setIsRegister] = useState(false);
   const [name, setName] = useState('');
@@ -44,7 +48,9 @@ export default function LoginPage() {
 
       login(res.access_token, res.user);
 
-      if (res.user.role === 'admin') {
+      if (from) {
+        navigate(from, { replace: true });
+      } else if (res.user.role === 'admin') {
         navigate('/');
       } else {
         navigate('/sessions');

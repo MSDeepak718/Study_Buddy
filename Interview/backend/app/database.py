@@ -83,6 +83,74 @@ def create_tables():
     except Exception:
         pass
 
+    # Auto-migrate: update Postgres enum 'interviewmode' to include new values
+    try:
+        with engine.connect() as conn:
+            for enum_val in ['dsa', 'system_design', 'full_flow']:
+                try:
+                    conn.execute(text(f"ALTER TYPE interviewmode ADD VALUE IF NOT EXISTS '{enum_val}';"))
+                    conn.commit()
+                except Exception:
+                    pass
+    except Exception as e:
+        print(f"Enum update error: {e}")
+
+    # Auto-migrate: add invite_code and dsa_problems to interview_configurations
+    try:
+        with engine.connect() as conn:
+            res = conn.execute(text(
+                "SELECT column_name "
+                "FROM information_schema.columns "
+                "WHERE table_name='interview_configurations' AND column_name='invite_code'"
+            ))
+            if not res.fetchone():
+                conn.execute(text("ALTER TABLE interview_configurations ADD COLUMN invite_code VARCHAR(64);"))
+                conn.commit()
+
+            res2 = conn.execute(text(
+                "SELECT column_name "
+                "FROM information_schema.columns "
+                "WHERE table_name='interview_configurations' AND column_name='dsa_problems'"
+            ))
+            if not res2.fetchone():
+                conn.execute(text("ALTER TABLE interview_configurations ADD COLUMN dsa_problems JSON;"))
+                conn.commit()
+    except Exception as e:
+        print(f"Migration error for config columns: {e}")
+
+    # Auto-migrate: add current_stage, attempt_count, max_attempts, is_disqualified to interview_sessions
+    try:
+        with engine.connect() as conn:
+            res = conn.execute(text(
+                "SELECT column_name "
+                "FROM information_schema.columns "
+                "WHERE table_name='interview_sessions' AND column_name='current_stage'"
+            ))
+            if not res.fetchone():
+                conn.execute(text("ALTER TABLE interview_sessions ADD COLUMN current_stage VARCHAR(50) DEFAULT 'one_on_one';"))
+                conn.commit()
+
+            res_att = conn.execute(text(
+                "SELECT column_name "
+                "FROM information_schema.columns "
+                "WHERE table_name='interview_sessions' AND column_name='attempt_count'"
+            ))
+            if not res_att.fetchone():
+                conn.execute(text("ALTER TABLE interview_sessions ADD COLUMN attempt_count INTEGER DEFAULT 1;"))
+                conn.execute(text("ALTER TABLE interview_sessions ADD COLUMN max_attempts INTEGER DEFAULT 2;"))
+                conn.execute(text("ALTER TABLE interview_sessions ADD COLUMN is_disqualified BOOLEAN DEFAULT FALSE;"))
+                conn.commit()
+
+            # Ensure both 'failed' and 'FAILED' values exist in sessionstatus PostgreSQL enum
+            try:
+                conn.execute(text("ALTER TYPE sessionstatus ADD VALUE IF NOT EXISTS 'FAILED';"))
+                conn.execute(text("ALTER TYPE sessionstatus ADD VALUE IF NOT EXISTS 'failed';"))
+                conn.commit()
+            except Exception:
+                pass
+    except Exception as e:
+        print(f"Migration error for session columns: {e}")
+
     # Seed Admin User
     try:
         from app.models.user import User, UserRole

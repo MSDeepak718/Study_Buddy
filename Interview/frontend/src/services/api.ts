@@ -89,6 +89,16 @@ export const updateConfig = async (id: string, config: InterviewConfigRequest): 
   return data;
 };
 
+export const getConfigByInvite = async (inviteCode: string): Promise<InterviewConfig> => {
+  const { data } = await api.get(`/interviews/invite/${inviteCode}`);
+  return data;
+};
+
+export const startInterviewByInvite = async (inviteCode: string) => {
+  const { data } = await api.post(`/interviews/start-by-invite/${inviteCode}`);
+  return data;
+};
+
 // ===== Interview Sessions =====
 export const startInterview = async (req: StartInterviewRequest) => {
   const { data } = await api.post('/interviews/start', req);
@@ -97,6 +107,11 @@ export const startInterview = async (req: StartInterviewRequest) => {
 
 export const getSession = async (sessionId: string): Promise<SessionInfo> => {
   const { data } = await api.get(`/interviews/${sessionId}`);
+  return data;
+};
+
+export const incrementAttempt = async (sessionId: string) => {
+  const { data } = await api.post(`/interviews/${sessionId}/increment-attempt`);
   return data;
 };
 
@@ -125,6 +140,27 @@ export const completeVoiceInterview = async (sessionId: string, transcript: { sp
 
 export const listSessions = async (): Promise<SessionInfo[]> => {
   const { data } = await api.get('/interviews/sessions/list');
+  return data;
+};
+
+// ===== DSA Services =====
+export const generateDSAProblem = async (topic: string, difficulty: string) => {
+  const { data } = await api.post('/dsa/generate-problem', { topic, difficulty });
+  return data;
+};
+
+export const runDSACode = async (language: string, code: string, testCases: any[]) => {
+  const { data } = await api.post('/dsa/run-code', { language, code, test_cases: testCases });
+  return data;
+};
+
+export const submitDSASolution = async (sessionId: string, language: string, code: string, problemIndex: number = 0) => {
+  const { data } = await api.post('/dsa/submit-solution', {
+    session_id: sessionId,
+    problem_index: problemIndex,
+    language,
+    code,
+  });
   return data;
 };
 

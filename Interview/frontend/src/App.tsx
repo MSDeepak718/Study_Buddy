@@ -7,6 +7,8 @@ import AdminDashboard from './pages/AdminDashboard';
 import InterviewPage from './pages/InterviewPage';
 import AnalyticsDashboard from './pages/AnalyticsDashboard';
 import SessionsPage from './pages/SessionsPage';
+import TestInvitePage from './pages/TestInvitePage';
+import DSATestWorkspacePage from './pages/DSATestWorkspacePage';
 import './App.css';
 
 function App() {
@@ -14,23 +16,25 @@ function App() {
     <AuthProvider>
       <BrowserRouter>
         <Routes>
-          {/* Public Auth Route */}
+          {/* Public Auth & Invite Link Routes */}
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/test/invite/:inviteCode" element={<TestInvitePage />} />
 
-          {/* Protected Routes inside Layout */}
+          {/* Protected Routes */}
           <Route element={<ProtectedRoute />}>
+            {/* Routes wrapped in Admin Layout (with Sidebar) */}
             <Route element={<Layout />}>
-              {/* Admin Only Routes */}
               <Route element={<ProtectedRoute requiredRole="admin" />}>
                 <Route path="/" element={<AdminDashboard />} />
                 <Route path="/interview" element={<AdminDashboard />} />
               </Route>
-
-              {/* Shared Protected Routes (Admin + Candidate) */}
               <Route path="/sessions" element={<SessionsPage />} />
-              <Route path="/interview/:sessionId" element={<InterviewPage />} />
               <Route path="/analytics/:sessionId" element={<AnalyticsDashboard />} />
             </Route>
+
+            {/* Standalone Full-Screen Assessment Workspaces (NO Sidebar Layout) */}
+            <Route path="/interview/:sessionId" element={<InterviewPage />} />
+            <Route path="/dsa/workspace/:sessionId" element={<DSATestWorkspacePage />} />
           </Route>
 
           {/* Fallback */}

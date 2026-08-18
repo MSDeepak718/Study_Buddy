@@ -92,3 +92,73 @@ RECOMMENDATION_PROMPT = """Based on the following interview performance data, ge
     "study_resources": ["resource1", "resource2", "resource3"]
 }}
 """
+
+
+DSA_PROBLEM_GENERATION_PROMPT = """You are an expert DSA technical interviewer. Generate an authentic LeetCode problem (or LeetCode-style problem) based on the specified parameters.
+
+**PARAMETERS:**
+- Topic/Category: {topic} (e.g., Arrays, Strings, Dynamic Programming, Trees, Graphs, Two Pointers, Sliding Window, Heap)
+- Difficulty Level: {difficulty} (Easy, Medium, Hard)
+
+**RULES:**
+1. Pull or format a real, authentic LeetCode problem corresponding to the topic and difficulty.
+2. Provide a clear problem statement, input/output specifications, constraints, and examples.
+3. Include starter code templates for both Python (3) and JavaScript.
+4. Include at least 2 sample test cases (for candidate practice/run) and at least 3 hidden test cases (for grading).
+5. Ensure the function signature in starter code matches the arguments used in test cases.
+
+**OUTPUT FORMAT (respond ONLY with JSON, no markdown code fences):**
+{{
+    "title": "<LeetCode Problem Title, e.g. Two Sum>",
+    "difficulty": "{difficulty}",
+    "topic": "{topic}",
+    "description": "<Full problem description with examples and rules>",
+    "constraints": "<e.g., 1 <= nums.length <= 10^4>",
+    "starter_code": {{
+        "python": "def solution(nums, target):\n    # Write your solution here\n    pass",
+        "javascript": "function solution(nums, target) {{\n    // Write your solution here\n}}"
+    }},
+    "sample_test_cases": [
+        {{"input": "[2, 7, 11, 15], 9", "expected_output": "[0, 1]"}},
+        {{"input": "[3, 2, 4], 6", "expected_output": "[1, 2]"}}
+    ],
+    "hidden_test_cases": [
+        {{"input": "[3, 3], 6", "expected_output": "[0, 1]"}}
+    ]
+}}
+"""
+
+
+DSA_CODE_EVALUATION_PROMPT = """You are a senior LeetCode/DSA interviewer evaluating a candidate's code submission.
+
+**PROBLEM:**
+{problem_title} ({difficulty})
+{problem_description}
+
+**CANDIDATE CODE ({language}):**
+{code}
+
+**TEST CASE RESULTS:**
+- Passed: {passed_test_cases}/{total_test_cases} test cases
+
+**EVALUATION CRITERIA (0-10 scale):**
+1. **Technical Accuracy**: Correctness, logic, correctness on edge cases.
+2. **Clarity**: Code structure, variable naming, readability.
+3. **Relevance**: Does the code solve the specific DSA problem cleanly?
+4. **Completeness**: Efficient handling of constraints, time & space complexity.
+
+**OUTPUT FORMAT (respond ONLY with JSON, no markdown code fences):**
+{{
+    "technical_accuracy": <score 0-10>,
+    "clarity": <score 0-10>,
+    "relevance": <score 0-10>,
+    "completeness": <score 0-10>,
+    "overall_score": <weighted_average 0-10>,
+    "time_complexity": "<e.g., O(N) or O(N^2)>",
+    "space_complexity": "<e.g., O(1) or O(N)>",
+    "feedback": "<2-3 sentences of feedback>",
+    "strengths": "<what the code did well>",
+    "weaknesses": "<areas for optimization or edge case bugs>"
+}}
+"""
+

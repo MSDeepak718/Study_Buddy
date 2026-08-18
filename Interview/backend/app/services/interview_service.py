@@ -32,12 +32,21 @@ class InterviewService:
             num_questions=config_data.get("num_questions", 10),
             document_ids=config_data.get("document_ids", []),
             interview_mode=InterviewMode(config_data.get("interview_mode", "chat")),
+            dsa_problems=config_data.get("dsa_problems", []),
         )
         db.add(config)
         db.commit()
         db.refresh(config)
         logger.info(f"Created interview config: {config.id} - {config.title}")
         return config
+
+    def get_configuration_by_invite(self, db: Session, invite_code: str) -> InterviewConfiguration | None:
+        """Find interview configuration by unique invite code."""
+        return (
+            db.query(InterviewConfiguration)
+            .filter(InterviewConfiguration.invite_code == invite_code)
+            .first()
+        )
 
     def list_configurations(self, db: Session) -> list[InterviewConfiguration]:
         """List all interview configurations."""
@@ -120,7 +129,7 @@ class InterviewService:
     def start_session(
         self, db: Session, config_id: str, student_id: str
     ) -> InterviewSession:
-        """Start a new interview session from a configuration."""
+        """Start or retrieve an existing interview session for a candidate & configuration."""
         config = (
             db.query(InterviewConfiguration)
             .filter(InterviewConfiguration.id == config_id)
@@ -129,16 +138,48 @@ class InterviewService:
         if not config:
             raise ValueError(f"Configuration not found: {config_id}")
 
+        # Check if an existing session already exists for this candidate & configuration
+        existing_session = (
+            db.query(InterviewSession)
+            .filter(
+                InterviewSession.config_id == config_id,
+                InterviewSession.student_id == student_id,
+            )
+            .order_by(InterviewSession.started_at.desc())
+            .first()
+        )
+
+        if existing_session:
+            # Re-entry: Increment attempt count
+            current_attempts = existing_session.attempt_count or 1
+            new_attempts = current_attempts + 1
+            existing_session.attempt_count = new_attempts
+
+            max_att = existing_session.max_attempts or 2
+            if new_attempts >= max_att:
+                existing_session.is_disqualified = True
+                existing_session.status = SessionStatus.FAILED
+                existing_session.overall_score = 0.0
+
+            db.commit()
+            db.refresh(existing_session)
+            logger.info(f"Re-entered existing interview session {existing_session.id}, attempt_count={existing_session.attempt_count}")
+            return existing_session
+
+        # First entry: Create new session
         session = InterviewSession(
             config_id=config_id,
             student_id=student_id,
             status=SessionStatus.IN_PROGRESS,
             started_at=datetime.now(timezone.utc),
+            attempt_count=1,
+            max_attempts=2,
+            is_disqualified=False,
         )
         db.add(session)
         db.commit()
         db.refresh(session)
-        logger.info(f"Started interview session: {session.id}")
+        logger.info(f"Started new interview session: {session.id}")
         return session
 
     def get_session(self, db: Session, session_id: str) -> InterviewSession | None:
